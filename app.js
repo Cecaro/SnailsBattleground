@@ -1,8 +1,9 @@
 // Written by Romain Cerovic
 // Based on the code of Realtime Multiplayer in HTML 5 
-// App.js sets up all that is needed to run the server and start the gameServer. 
+// app.js sets up all that is needed to run the server and start the gameServer. 
 
-var gameport 	= process.env.PORT || 9001,
+var 
+	gameport 	= process.env.PORT || 9001,
 	fileDebug 	= false,
 
 	io 			= require('socket.io'),
