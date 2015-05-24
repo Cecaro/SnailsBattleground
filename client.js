@@ -10,7 +10,7 @@ window.onload = function(){
 	game = new game_core();
 
 		//Gets viewport for game client
-		game.viewport = document.getElemetById('viewport');
+		game.viewport = document.getElementById('viewport');
 		
 		//Adjusts the size of the client's viewport
 		game.viewport.width = game.world.width;
