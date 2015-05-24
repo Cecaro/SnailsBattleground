@@ -43,8 +43,8 @@ if('undefined' != typeof(global))
 
 		this.world=
 		{
-			width: 	1280
-			height: 720
+			width	: 1280
+			height	: 720
 		};
 
 		if(this.server)
@@ -52,6 +52,50 @@ if('undefined' != typeof(global))
 			this.player = {
 				self 	: new game_player(this),
 				other 	: new game_player(this)
+			};
+			this.players.self.pos = 
+			{
+				x	: 20,
+				y	: 20
+			};
+		}
+		else
+		{
+			this.players =
+			{
+				self	: new game_player(this),
+				other	: new game_player(this)
+			};
+
+			this.ghost = {
+				server_pos_self		: new game_player(this),
+				server_pos_other	: new game_player(this),
+				pos_other 			: new game_player(this)
+			};
+			this.ghost.pos_other.state = 'dest_pos'
+
+			this.ghost.pos_other.info_color = 'rgba(0,255,0,0.3)';
+
+			this.ghost.server_pos_self.info_color 	= 'rgba(0,255,0,0.3)';
+			this.ghost.server_pos_other.info_color	= 'rgba(0,255,0,0.3)';
+
+			this.ghost.server_pos_self.state 	= 'server_pos';
+			this.ghost.server_pos_other.state 	= 'server_pos';
+
+			this.ghost.server_pos_self.pos = 
+			{
+				x : 20,
+				y : 20
+			};
+			this.ghost.pos_other.pos =
+			{
+				x : 700,
+				y : 300
+			};
+			this.ghost.server_pos_other.pos =
+			{
+				x : 700,
+				y : 300
 			};
 		}
 	}
