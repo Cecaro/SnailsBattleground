@@ -48,19 +48,19 @@ var socket = io.listen(server);
 // call the gameSever file to run
 // the game server handles connection, game logins, game creation, joining games
 // and deleting and ending games 
-gameServer = require("./gameServer.js");
+game_server = require("./gameServer.js");
 
 socket.sockets.on("connection", function(client) {
 	client.userid = UUID();
 
 	client.emit("onconnected", {id: client.userid} );
 
-	gameServer.findGame(client);
+	game_server.findGame(client);
 
 	console.log("New player " + client.userid + "has joined.");
 
 	client.on("message", function(m) {
-		gameServer.delayMessage(client, m);
+		game_server.delayMessage(client, m);
 	});
 
 	client.on("disconnect", function(){
@@ -68,7 +68,7 @@ socket.sockets.on("connection", function(client) {
 
 		//end the game if the client is disconnected 
 		if(client.game && client.game.id) {
-			gameServer.endGame(client.game.id, client.userid);
+			game_server.endGame(client.game.id, client.userid);
 		}
 	});
 });

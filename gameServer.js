@@ -29,7 +29,7 @@ setInterval(function(){
 }, 4);
 
 //
-gameServer.delayMessage = function(client, message) {
+exports.delayMessage = function(client, message) {
 	if(this.presetPing && message.split(".")[0].substr(0,1) == "i"){
 
 		gameServer.messages.push({client:client, message:message});
@@ -46,7 +46,7 @@ gameServer.delayMessage = function(client, message) {
 	}
 };
 
-gameServer.onMessage = function(client, message){
+exports.onMessage = function(client, message){
 	var messageSplit = message.split(".");
 	var messageType = messageSplit[0];
 
@@ -74,7 +74,7 @@ gameServer.onMessage = function(client, message){
 
  };
 
-gameServer.onInput = function(client, msgs){
+exports.onInput = function(client, msgs){
 	var commands = msgs[1].split("-");
 
 	var iTime = msgs[2].replace("-",".");
@@ -86,7 +86,7 @@ gameServer.onInput = function(client, msgs){
 	}
 };
 
-gameServer.createGame = function(player){
+exports.createGame = function(player){
 	var aGame = {
 		ID : UUID(),
 		playerHost:player,
@@ -110,7 +110,7 @@ gameServer.createGame = function(player){
 	return aGame;
 };
 
-gameServer.endGame = function(gameID, userID){
+exports.endGame = function(gameID, userID){
 	var eGame = this.games[gameID];
 
 	if(eGame){
@@ -143,7 +143,7 @@ gameServer.endGame = function(gameID, userID){
 	}
 };
 
-gameServer.startGame = function(game){
+exports.startGame = function(game){
 	//Sends the player the ID of the host
 	game.playerClient.send("s.j" + game.playerHost.userID);
 	//Sets the game of the client to be the current game
@@ -157,7 +157,7 @@ gameServer.startGame = function(game){
 	gameStarted = true;
 };
 
-gameServer.findGame = function(player){
+exports.findGame = function(player){
 	if(this.gameCount){
 		var joinGame = false;
 
