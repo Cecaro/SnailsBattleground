@@ -1,6 +1,6 @@
 // Written by Romain Cerovic 
 
-var gameServer 	= module.explorts = { games : {}, game_count:0},
+var gameServer 	= module.explorts = { games : {}, gameCount:0},
 	UUID 		= require("node-uuid"),
 	verbose		= true;
 
@@ -57,21 +57,112 @@ gameServer.onMessage = function(client, message){
  };
 
 gameServer.onInput = function(client, msgs){
+	var commands = msgs[1].split("-");
 
+	var iTime = msgs[2].replace("-",".");
+
+	var sequence = msgs[3];
+
+	if(client && client.game && client.game.gameMg){
+		client.game.gameMg.handle_server_input(client, commands, iTime, sequence);
+	}
 };
 
 gameServer.createGame = function(player){
+	var aGame = {
+		ID = UUID(),
+		playerHost:player,
+		playerClient:null,
+		playerCount:1
+	};
+	this.games [ aGame.ID ] = aGame;
 
+	this.gameCount++;
+
+	aGame.gameMg = new game_Manager(aGame);
+
+	aGame.gameMg.update(new Date().getTime());
+
+	player.send("s.h" + String(aGame.gameMg.lTime).replace(".","-"));
+	player.game = aGame;
+	player.hosting = true;
+
+	this.log("Game created with ID of " + player.game.ID + "by player " + player.ID);
+
+	return aGame;
 };
 
 gameServer.endGame = function(gameID, userID){
+	var eGame = this.games[gameID];
 
+	if(eGame){
+		eGame.gameMg.stop_update();
+
+		if(eGame.playerCount > 1) {
+			if(userID == eGame.playerHost.userID){
+				if(eGame.playerClient){
+					eGame.playerClient.send("s.e");
+					this.findGame(eGame.playerClient);
+				}
+			}
+			else{
+				if(eGame.playerHost){
+					eGame.playerHost.send("s.e");
+
+					eGame.playerHost.hosting = false;
+
+					this.findGame(eGame.playerHost);
+				}
+			}
+		}
+
+		delete this.games[gameID];
+		this.gameCount--;
+	}
+
+	else{
+		this.log("Game does not exist.");
+	}
 };
 
 gameServer.startGame = function(game){
+	//Sends the player the ID of the host
+	game.playerClient.send("s.j" + game.playerHost.userID);
+	//Sets the game of the client to be the current game
+	game.playerClient.game = game;
 
+	//send both the client and the host of the game that the game is ready
+	game.playerClient.send("s.r" + String(game.gameMg.lTime).replace(".","-"));
+	game.playerHost.send("s.r" + String(game.gameMg.lTime).replace(".","-"));
+
+	//boolean used to start updates 
+	gameStarted = true;
 };
 
 gameServer.findGame = function(player){
+	if(this.gameCount){
+		var joinGame = false;
 
+		for(var gameId in this.games) {
+			if(!this.games.hasOwnProperty(gameId)) continue;
+
+			var gameInst = this.games[gameId];
+
+			if(gameInst.playerCount < 2) {
+				joinGame = true;
+
+				gameInst.playerClient = player;
+				gameInst.gameMg.players.other.instance = player;
+				gameInst.playerCount++;
+
+				this.startGame(gameInst);
+			}
+		}
+		if(!joinGame){
+			this.createGame(player);
+		}
+		else {
+			this.createGame(player);
+		}
+	}
 };
