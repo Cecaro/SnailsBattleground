@@ -54,6 +54,24 @@ gameServer.onMessage = function(client, message){
             (client.game.playerHost.userID == client.userID) ?
                 client.game.playerClient : client.game.playerHost;
 
+    switch(messageType) {
+    	case "i":
+    		this.onInput(client,messageSplit);
+    		break;
+    	case "p":
+    		client.send("s.p" + messageSplit[1]);
+    		break;
+    	case "c":
+    		if(otherClient)
+    			otherClient.send("s.c" + messageSplit[1]);
+    		break;
+    	case "l":
+    		this.presetPing = parseFloat(messageSplit[1]);
+    		break;
+    	default:
+    		this.log("No message received.");
+    }
+
  };
 
 gameServer.onInput = function(client, msgs){
