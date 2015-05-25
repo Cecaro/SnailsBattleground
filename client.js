@@ -2,12 +2,12 @@
 // Based on the code of Realtime Multiplayer in HTML 5 
 // client.js sets the game up for players joining the already made game.
 
-var gamre{};
+var game = {};
 
 window.onload = function(){
 
 	//Creates the game client instance.
-	game = new game_core();
+	game = new game_Manager();
 
 		//Gets viewport for game client
 		game.viewport = document.getElementById('viewport');

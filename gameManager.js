@@ -11,7 +11,7 @@ if('undefined' != typeof(global))
 ( function () 
 {
 	var lastTime = 0;
-	var vandors = ['ms', 'moz', 'webkit', 'o'];
+	var vendors = ['ms', 'moz', 'webkit', 'o'];
 
 	for(var i = 0; i < vendors.length && !window.requestAnimationFrame; i++)
 	{
@@ -43,7 +43,7 @@ if('undefined' != typeof(global))
 
 		this.world=
 		{
-			width	: 1280
+			width	: 1280,
 			height	: 720
 		};
 
@@ -102,7 +102,7 @@ if('undefined' != typeof(global))
 		this.playerspeed = 120
 
 		this._pdt = 0.0001;
-		this._pdte = mew Date().getTime();
+		this._pdte = new Date().getTime();
 
 		this.local_time = 0.016;
 		this._dt = new Date().getTime();
@@ -167,8 +167,8 @@ if('undefined' != typeof(global))
     {
     	return
     	{
-    		x : a,
-    		y : a.y
+    		x : a.x;
+            y : a.y
     	};
     };
 
@@ -177,7 +177,7 @@ if('undefined' != typeof(global))
     {
     	return
     	{
-    		x : (a.x + b.x).fixed(),
+    		x : (a.x + b.x).fixed();
     		y : (a.y + b.y).fixed()
     	};
     };
@@ -187,7 +187,7 @@ if('undefined' != typeof(global))
     {
     	return
     	{
-    		x : (a.x - b.x).fixed(),
+    		x : (a.x - b.x).fixed();
     		y : (a.y - b.y).fixed()
     	};
     };
@@ -197,7 +197,7 @@ if('undefined' != typeof(global))
     {
     	return
     	{
-    		x : (a.x*b).fixed(),
+    		x : (a.x*b).fixed();
     		y:(a.y*b).fixed()
     	};
     };
@@ -220,11 +220,61 @@ if('undefined' != typeof(global))
     { 
     	return 
     	{ 
-    		x : this.lerp(v.x, tv.x, t), 
+    		x : this.lerp(v.x, tv.x, t);
     		y : this.lerp(v.y, tv.y, t) 
     	}; 
     };
 
+var game_player = function( game_instance, player_instance ) {
+
+            //Store the instance, if any
+        this.instance = player_instance;
+        this.game = game_instance;
+
+            //Set up initial values for our state information
+        this.pos = { x:0, y:0 };
+        this.size = { x:16, y:16, hx:8, hy:8 };
+        this.state = 'not-connected';
+        this.color = 'rgba(255,255,255,0.1)';
+        this.info_color = 'rgba(255,255,255,0.1)';
+        this.id = '';
+
+            //These are used in moving us around later
+        this.old_state = {pos:{x:0,y:0}};
+        this.cur_state = {pos:{x:0,y:0}};
+        this.state_time = new Date().getTime();
+
+            //Our local history of inputs
+        this.inputs = [];
+
+            //The world bounds we are confined to
+        this.pos_limits = {
+            x_min: this.size.hx,
+            x_max: this.game.world.width - this.size.hx,
+            y_min: this.size.hy,
+            y_max: this.game.world.height - this.size.hy
+        };
+
+            //The 'host' of a game gets created with a player instance since
+            //the server already knows who they are. If the server starts a game
+            //with only a host, the other player is set up in the 'else' below
+        if(player_instance) {
+            this.pos = { x:20, y:20 };
+        } else {
+            this.pos = { x:500, y:200 };
+        }
+
+    }; //game_player.constructor
+
+    game_player.prototype.draw = function()
+    {
+        game.ctx.fillStyle = this.color;
+
+        game.ctx.fillRect(this.pos.x - this.size.hx, this.pos.y - this.size.gy, this.size.x, this.size.y);
+
+        game.ctx.fillStyle = this.info_color;
+        game.ctx.fillText(this.state, this.pos.x + 10, this.pos.y + 4);
+    };
 
 game_Manager.prototype.update = function(t)
 {
@@ -410,7 +460,7 @@ game_Manager.prototype.process_Input = function( player )
 
 
 
-game_core.prototype.physics_movement_vector_from_direction = function(x,y) {
+game_Manager.prototype.physics_movement_vector_from_direction = function(x,y) {
 
         //Must be fixed step, at physics sync speed.
     return {
@@ -418,9 +468,9 @@ game_core.prototype.physics_movement_vector_from_direction = function(x,y) {
         y : (y * (this.playerspeed * 0.015)).fixed(3)
     };
 
-}; //game_core.physics_movement_vector_from_direction
+}; //game_Manager.physics_movement_vector_from_direction
 
-game_core.prototype.update_physics = function() {
+game_Manager.prototype.update_physics = function() {
 
     if(this.server) {
         this.server_update_physics();
@@ -428,7 +478,7 @@ game_core.prototype.update_physics = function() {
         this.client_update_physics();
     }
 
-}; //game_core.prototype.update_physics
+}; //game_Manager.prototype.update_physics
 
 /*
 
@@ -440,7 +490,7 @@ game_core.prototype.update_physics = function() {
 */
 
     //Updated at 15ms , simulates the world state
-game_core.prototype.server_update_physics = function() {
+game_Manager.prototype.server_update_physics = function() {
 
         //Handle player one
     this.players.self.old_state.pos = this.pos( this.players.self.pos );
@@ -459,11 +509,11 @@ game_core.prototype.server_update_physics = function() {
     this.players.self.inputs = []; //we have cleared the input buffer, so remove this
     this.players.other.inputs = []; //we have cleared the input buffer, so remove this
 
-}; //game_core.server_update_physics
+}; //game_Manager.server_update_physics
 
     //Makes sure things run smoothly and notifies clients of changes
     //on the server side
-game_core.prototype.server_update = function(){
+game_Manager.prototype.server_update = function(){
 
         //Update the state of our local clock to match the timer
     this.server_time = this.local_time;
@@ -487,10 +537,10 @@ game_core.prototype.server_update = function(){
         this.players.other.instance.emit( 'onserverupdate', this.laststate );
     }
 
-}; //game_core.server_update
+}; //game_Manager.server_update
 
 
-game_core.prototype.handle_server_input = function(client, input, input_time, input_seq) {
+game_Manager.prototype.handle_server_input = function(client, input, input_time, input_seq) {
 
         //Fetch which client this refers to out of the two
     var player_client =
@@ -500,7 +550,7 @@ game_core.prototype.handle_server_input = function(client, input, input_time, in
         //Store the input on the player instance for processing in the physics loop
    player_client.inputs.push({inputs:input, time:input_time, seq:input_seq});
 
-}; //game_core.handle_server_input
+}; //game_Manager.handle_server_input
 
 
 /*
@@ -512,7 +562,7 @@ game_core.prototype.handle_server_input = function(client, input, input_time, in
 
 */
 
-game_core.prototype.client_handle_input = function(){
+game_Manager.prototype.client_handle_input = function(){
 
     //if(this.lit > this.local_time) return;
     //this.lit = this.local_time+0.5; //one second delay
@@ -589,9 +639,9 @@ game_core.prototype.client_handle_input = function(){
 
     }
 
-}; //game_core.client_handle_input
+}; //game_Manager.client_handle_input
 
-game_core.prototype.client_process_net_prediction_correction = function() {
+game_Manager.prototype.client_process_net_prediction_correction = function() {
 
         //No updates...
     if(!this.server_updates.length) return;
@@ -640,9 +690,9 @@ game_core.prototype.client_process_net_prediction_correction = function() {
             } // if(lastinputseq_index != -1)
         } //if my_last_input_on_server
 
-}; //game_core.client_process_net_prediction_correction
+}; //game_Manager.client_process_net_prediction_correction
 
-game_core.prototype.client_process_net_updates = function() {
+game_Manager.prototype.client_process_net_updates = function() {
 
         //No updates...
     if(!this.server_updates.length) return;
@@ -748,9 +798,9 @@ game_core.prototype.client_process_net_updates = function() {
 
     } //if target && previous
 
-}; //game_core.client_process_net_updates
+}; //game_Manager.client_process_net_updates
 
-game_core.prototype.client_onserverupdate_recieved = function(data){
+game_Manager.prototype.client_onserverupdate_recieved = function(data){
 
             //Lets clarify the information we have locally. One of the players is 'hosting' and
             //the other is a joined in client, so we name these host and client for making sure
@@ -806,9 +856,9 @@ game_core.prototype.client_onserverupdate_recieved = function(data){
             
         } //non naive
 
-}; //game_core.client_onserverupdate_recieved
+}; //game_Manager.client_onserverupdate_recieved
 
-game_core.prototype.client_update_local_position = function(){
+game_Manager.prototype.client_update_local_position = function(){
 
  if(this.client_predict) {
 
@@ -824,13 +874,13 @@ game_core.prototype.client_update_local_position = function(){
         this.players.self.pos = current_state;
         
             //We handle collision on client if predicting.
-        this.check_collision( this.players.self );
+        this.collision( this.players.self );
 
     }  //if(this.client_predict)
 
-}; //game_core.prototype.client_update_local_position
+}; //game_Manager.prototype.client_update_local_position
 
-game_core.prototype.client_update_physics = function() {
+game_Manager.prototype.client_update_physics = function() {
 
         //Fetch the new direction from the input buffer,
         //and apply it to the state so we can smooth it in the visual state
@@ -838,15 +888,15 @@ game_core.prototype.client_update_physics = function() {
     if(this.client_predict) {
 
         this.players.self.old_state.pos = this.pos( this.players.self.cur_state.pos );
-        var nd = this.process_input(this.players.self);
+        var nd = this.process_Input(this.players.self);
         this.players.self.cur_state.pos = this.v_add( this.players.self.old_state.pos, nd);
         this.players.self.state_time = this.local_time;
 
     }
 
-}; //game_core.client_update_physics
+}; //game_Manager.client_update_physics
 
-game_core.prototype.client_update = function() {
+game_Manager.prototype.client_update = function() {
 
         //Clear the screen area
     this.ctx.clearRect(0,0,720,480);
@@ -889,9 +939,9 @@ game_core.prototype.client_update = function() {
         //Work out the fps average
     this.client_refresh_fps();
 
-}; //game_core.update_client
+}; //game_Manager.update_client
 
-game_core.prototype.create_timer = function(){
+game_Manager.prototype.create_timer = function(){
     setInterval(function(){
         this._dt = new Date().getTime() - this._dte;
         this._dte = new Date().getTime();
@@ -899,7 +949,7 @@ game_core.prototype.create_timer = function(){
     }.bind(this), 4);
 }
 
-game_core.prototype.create_physics_simulation = function() {
+game_Manager.prototype.create_physics_simulation = function() {
 
     setInterval(function(){
         this._pdt = (new Date().getTime() - this._pdte)/1000.0;
@@ -907,10 +957,10 @@ game_core.prototype.create_physics_simulation = function() {
         this.update_physics();
     }.bind(this), 15);
 
-}; //game_core.client_create_physics_simulation
+}; //game_Manager.client_create_physics_simulation
 
 
-game_core.prototype.client_create_ping_timer = function() {
+game_Manager.prototype.client_create_ping_timer = function() {
 
         //Set a ping timer to 1 second, to maintain the ping/latency between
         //client and server and calculated roughly how our connection is doing
@@ -922,10 +972,10 @@ game_core.prototype.client_create_ping_timer = function() {
 
     }.bind(this), 1000);
     
-}; //game_core.client_create_ping_timer
+}; //game_Manager.client_create_ping_timer
 
 
-game_core.prototype.client_create_configuration = function() {
+game_Manager.prototype.client_create_configuration = function() {
 
     this.show_help = false;             //Whether or not to draw the help text
     this.naive_approach = false;        //Whether or not to use the naive approach
@@ -959,9 +1009,9 @@ game_core.prototype.client_create_configuration = function() {
     this.lit = 0;
     this.llt = new Date().getTime();
 
-};//game_core.client_create_configuration
+};//game_Manager.client_create_configuration
 
-game_core.prototype.client_create_debug_gui = function() {
+game_Manager.prototype.client_create_debug_gui = function() {
 
     this.gui = new dat.GUI();
 
@@ -1017,9 +1067,9 @@ game_core.prototype.client_create_debug_gui = function() {
 
         _netsettings.open();
 
-}; //game_core.client_create_debug_gui
+}; //game_Manager.client_create_debug_gui
 
-game_core.prototype.client_reset_positions = function() {
+game_Manager.prototype.client_reset_positions = function() {
 
     var player_host = this.players.self.host ?  this.players.self : this.players.other;
     var player_client = this.players.self.host ?  this.players.other : this.players.self;
@@ -1039,9 +1089,9 @@ game_core.prototype.client_reset_positions = function() {
     this.ghosts.server_pos_other.pos = this.pos(this.players.other.pos);
     this.ghosts.pos_other.pos = this.pos(this.players.other.pos);
 
-}; //game_core.client_reset_positions
+}; //game_Manager.client_reset_positions
 
-game_core.prototype.client_onreadygame = function(data) {
+game_Manager.prototype.client_onreadygame = function(data) {
 
     var server_time = parseFloat(data.replace('-','.'));
 
@@ -1066,7 +1116,7 @@ game_core.prototype.client_onreadygame = function(data) {
 
 }; //client_onreadygame
 
-game_core.prototype.client_onjoingame = function(data) {
+game_Manager.prototype.client_onjoingame = function(data) {
 
         //We are not the host
     this.players.self.host = false;
@@ -1079,7 +1129,7 @@ game_core.prototype.client_onjoingame = function(data) {
 
 }; //client_onjoingame
 
-game_core.prototype.client_onhostgame = function(data) {
+game_Manager.prototype.client_onhostgame = function(data) {
 
         //The server sends the time when asking us to host, but it should be a new game.
         //so the value will be really small anyway (15 or 16ms)
@@ -1100,7 +1150,7 @@ game_core.prototype.client_onhostgame = function(data) {
 
 }; //client_onhostgame
 
-game_core.prototype.client_onconnected = function(data) {
+game_Manager.prototype.client_onconnected = function(data) {
 
         //The server responded that we are now in a game,
         //this lets us store the information about ourselves and set the colors
@@ -1112,20 +1162,20 @@ game_core.prototype.client_onconnected = function(data) {
 
 }; //client_onconnected
 
-game_core.prototype.client_on_otherclientcolorchange = function(data) {
+game_Manager.prototype.client_on_otherclientcolorchange = function(data) {
 
     this.players.other.color = data;
 
-}; //game_core.client_on_otherclientcolorchange
+}; //game_Manager.client_on_otherclientcolorchange
 
-game_core.prototype.client_onping = function(data) {
+game_Manager.prototype.client_onping = function(data) {
 
     this.net_ping = new Date().getTime() - parseFloat( data );
     this.net_latency = this.net_ping/2;
 
 }; //client_onping
 
-game_core.prototype.client_onnetmessage = function(data) {
+game_Manager.prototype.client_onnetmessage = function(data) {
 
     var commands = data.split('.');
     var command = commands[0];
@@ -1162,7 +1212,7 @@ game_core.prototype.client_onnetmessage = function(data) {
                 
 }; //client_onnetmessage
 
-game_core.prototype.client_ondisconnect = function(data) {
+game_Manager.prototype.client_ondisconnect = function(data) {
     
         //When we disconnect, we don't know if the other player is
         //connected or not, and since we aren't, everything goes to offline
@@ -1176,7 +1226,7 @@ game_core.prototype.client_ondisconnect = function(data) {
 
 }; //client_ondisconnect
 
-game_core.prototype.client_connect_to_server = function() {
+game_Manager.prototype.client_connect_to_server = function() {
         
             //Store a local reference to our connection to the server
         this.socket = io.connect();
@@ -1198,10 +1248,10 @@ game_core.prototype.client_connect_to_server = function() {
             //On message from the server, we parse the commands and send it to the handlers
         this.socket.on('message', this.client_onnetmessage.bind(this));
 
-}; //game_core.client_connect_to_server
+}; //game_Manager.client_connect_to_server
 
 
-game_core.prototype.client_refresh_fps = function() {
+game_Manager.prototype.client_refresh_fps = function() {
 
         //We store the fps for 10 frames, by adding it to this accumulator
     this.fps = 1/this.dt;
@@ -1217,10 +1267,10 @@ game_core.prototype.client_refresh_fps = function() {
 
     } //reached 10 frames
 
-}; //game_core.client_refresh_fps
+}; //game_Manager.client_refresh_fps
 
 
-game_core.prototype.client_draw_info = function() {
+game_Manager.prototype.client_draw_info = function() {
 
         //We don't want this to be too distracting
     this.ctx.fillStyle = 'rgba(255,255,255,0.3)';
@@ -1251,4 +1301,4 @@ game_core.prototype.client_draw_info = function() {
         //Reset the style back to full white.
     this.ctx.fillStyle = 'rgba(255,255,255,1)';
 
-}; //game_core.client_draw_help
+}; //game_Manager.client_draw_help
