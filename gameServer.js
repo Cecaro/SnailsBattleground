@@ -88,7 +88,7 @@ gameServer.onInput = function(client, msgs){
 
 gameServer.createGame = function(player){
 	var aGame = {
-		ID = UUID(),
+		ID : UUID(),
 		playerHost:player,
 		playerClient:null,
 		playerCount:1
@@ -179,8 +179,8 @@ gameServer.findGame = function(player){
 		if(!joinGame){
 			this.createGame(player);
 		}
-		else {
-			this.createGame(player);
-		}
+	}
+	else {
+		this.createGame(player);
 	}
 };

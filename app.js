@@ -37,18 +37,18 @@ app.get("/*", function(req, res, next){
 var socket = io.listen(server);
 
 //Socket configuration
-socket.configure(function(){
+/*socket.configure(function(){
 	socket.set("log level",0);
 
 	socket.set("authorisation", function(handshakeData, callback){
 		callback(null, true);
 	});
-});
+});*/
 
 // call the gameSever file to run
 // the game server handles connection, game logins, game creation, joining games
 // and deleting and ending games 
-game_server = require("./gameServer.js");
+gameServer = require("./gameServer.js");
 
 socket.sockets.on("connection", function(client) {
 	client.userid = UUID();
