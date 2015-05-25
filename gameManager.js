@@ -224,3 +224,104 @@ if('undefined' != typeof(global))
     		y : this.lerp(v.y, tv.y, t) 
     	}; 
     };
+
+
+game_Manager.prototype.update = function(t)
+{
+	//Calculate delta time
+	this.dt = this.lastframetime ? ( (t - this.lastframetime)/1000.0).fixed() : 0.016;
+
+	//Store time of last frame
+	this.lastframetime = t;
+
+	//Update game specifics
+	if(!this.server)
+	{
+		this.client_update();
+	}
+	else
+	{
+		this.server_update();
+	}
+
+	//Schedule the next update
+	this.updateid = window.requestAnimationFrame(this.update.bind(this), this.viewport);
+};
+
+//Collision detection
+game_Manager.prototype.collision = function( item )
+{
+	//Ceiling
+	if(item.pos.y <= item.pos_limits.y_min)
+	{
+		item.pos.y = item.pos_limits.y_min;
+	}
+
+	//Floor
+	if(item.pos.y >= item.pos_limits.y_max ) 
+	{
+        item.pos.y = item.pos_limits.y_max;
+    }
+
+    //Left wall
+    if(item.pos.x <= item.pos_limits.x_min) 
+    {
+        item.pos.x = item.pos_limits.x_min;
+    }
+    //Right wall
+    if(item.pos.x >= item.pos_limits.x_max ) 
+    {
+        item.pos.x = item.pos_limits.x_max;
+    }
+
+
+    item.pos.x = item.pos.x.fixed(4);
+    item.pos.y = item.pos.y.fixed(4);
+};
+
+//Process the inputs as there can be multiple inputs
+game_Manager.prototype.process_Input = function( player )
+{
+	var x_dir 	= 0;
+    var y_dir 	= 0;
+    var ic 		= player.inputs.length;
+    if(ic) 
+    {
+        for(var j = 0; j < ic; ++j) 
+        {
+            if(player.inputs[j].seq <= player.last_input_seq) continue;
+
+            var input 	= player.inputs[j].inputs;
+            var c 		= input.length;
+            for(var i = 0; i < c; ++i) 
+            {
+                var key = input[i];
+                if(key == 'l') 
+                {
+                    x_dir -= 1;
+                }
+                if(key == 'r') 
+                {
+                    x_dir += 1;
+                }
+                if(key == 'd') 
+                {
+                    y_dir += 1;
+                }
+                if(key == 'u') 
+                {
+                    y_dir -= 1;
+                }
+            }
+
+        }
+    }
+
+    var resulting_vector = this.physics_movement_vector_from_direction(x_dir,y_dir);
+    if(player.inputs.length) 
+    {
+        player.last_input_time = player.inputs[ic-1].time;
+        player.last_input_seq = player.inputs[ic-1].seq;
+    }
+    return resulting_vector;
+}

@@ -8,33 +8,6 @@ if('undefined' != typeof(global))
 	frame_time = 45;
 }
 
-( function () 
-{
-	var lastTime = 0;
-	var vandors = ['ms', 'moz', 'webkit', 'o'];
-
-	for(var i = 0; i < vendors.length && !window.requestAnimationFrame; i++)
-	{
-		window.requestAnimationFrame 	= window[vendors[i] + 'RequestAnimationFrame'];
-        window.cancelAnimationFrame 	= window[vendors[i] + 'CancelAnimationFrame'] || window[vendors[i] + 'CancelRequestAnimationFrame'];
-    }
-	 if ( !window.requestAnimationFrame ) 
-	 {
-        window.requestAnimationFrame = function ( callback, element ) 
-        {
-            var currTime 	= Date.now(), timeToCall = Math.max( 0, frame_time - ( currTime - lastTime ) );
-            var id 			= window.setTimeout( function() { callback( currTime + timeToCall ); }, timeToCall );
-            lastTime 		= currTime + timeToCall;
-            return id;
-        };
-    }
-    if ( !window.cancelAnimationFrame ) 
-    {
-        window.cancelAnimationFrame = function ( id ) { clearTimeout( id ); };
-    }
-
-}() );
-
 	var game_Player = function( game_inmstance, player_instance)
 	{
 
