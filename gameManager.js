@@ -147,3 +147,80 @@ if('undefined' != typeof(global))
 			this.server_time 	= 0;
 			this.laststate 		= {};
 		}
+	};
+
+	//Set game_Manager to global so can be used anywhere
+	if( 'undefined' != typeof global ) 
+	{
+    	module.exports = global.game_Manager = game_Manager;
+    }
+
+    //Returns n to 3 places
+    Number.prototype.fixed = function(n) 
+    {
+    	n = n || 3;
+    	return parseFloat(this.toFixed(n));
+    };
+
+    //Copies 2d vector from one to the other
+    game_Manager.prototype.pos = function(a)
+    {
+    	return
+    	{
+    		x : a,
+    		y : a.y
+    	};
+    };
+
+    //Add 2d vector to another then returns the resultant vector
+    game_Manager.prototype.v_add = function(a,b)
+    {
+    	return
+    	{
+    		x : (a.x + b.x).fixed(),
+    		y : (a.y + b.y).fixed()
+    	};
+    };
+
+    //Subtract 2d vector with another and returns the resultant vector
+    game_Manager.prototype.v_seb = function(a,b)
+    {
+    	return
+    	{
+    		x : (a.x - b.x).fixed(),
+    		y : (a.y - b.y).fixed()
+    	};
+    };
+
+    //Multiply 2d vector with a scalar value and returns the resultant vector
+    game_Manager.prototype.v_mul_scalar = function(a,b)
+    {
+    	return
+    	{
+    		x : (a.x*b).fixed(),
+    		y:(a.y*b).fixed()
+    	};
+    };
+
+    //Cancels setTimeoout for the server (setTimeout created in polyfill)
+    game_Manager.prototype.stop_update = function() 
+    {  
+    	window.cancelAnimationFrame( this.updateid );  
+    };
+
+    //Linear interpolation
+    game_Manager.prototype.lerp = function(p, n, t) 
+    { var _t = Number(t); 
+    	_t = (Math.max(0, Math.min(1, _t))).fixed(); 
+    	return (p + _t * (n - p)).fixed(); 
+    };
+
+    //Linear interpolation between 2 vectors
+    game_Manager.prototype.v_lerp = function(v,tv,t) 
+    { 
+    	return 
+    	{ 
+    		x : this.lerp(v.x, tv.x, t), 
+    		y : this.lerp(v.y, tv.y, t) 
+    	}; 
+    };
