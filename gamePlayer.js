@@ -71,3 +71,13 @@ if('undefined' != typeof(global))
         	this.pos = {x : 700, y : 300};
         }
 	};
+
+	game_Player.prototype.draw = function()
+	{
+		game.ctx.fillStyle = this.color;
+
+		game.ctx.fillRect(this.pos.x - this.size.hx, this.pos.y - this.size.gy, this.size.x, this.size.y);
+
+		game.ctx.fillStyle = this.info_color;
+		game.ctx.fillText(this.state, this.pos.x + 10, this.pos.y + 4);
+	};
