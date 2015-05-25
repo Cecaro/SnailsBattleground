@@ -55,12 +55,12 @@ socket.sockets.on("connection", function(client) {
 
 	client.emit("onconnected", {id: client.userid} );
 
-	game_server.findGame(client);
+	gameServer.findGame(client);
 
 	console.log("New player " + client.userid + "has joined.");
 
 	client.on("message", function(m) {
-		game_server.onMessage(client, m);
+		gameServer.delayMessage(client, m);
 	});
 
 	client.on("disconnect", function(){
@@ -68,7 +68,7 @@ socket.sockets.on("connection", function(client) {
 
 		//end the game if the client is disconnected 
 		if(client.game && client.game.id) {
-			game_server.endGame(client.game.id, client.userid);
+			gameServer.endGame(client.game.id, client.userid);
 		}
 	});
 });
