@@ -88,12 +88,12 @@ exports.onInput = function(client, msgs){
 
 exports.createGame = function(player){
 	var aGame = {
-		ID : UUID(),
+		id : UUID(),
 		playerHost:player,
 		playerClient:null,
 		playerCount:1
 	};
-	this.games [ aGame.ID ] = aGame;
+	this.games [ aGame.id ] = aGame;
 
 	this.gameCount++;
 
@@ -105,7 +105,7 @@ exports.createGame = function(player){
 	player.game = aGame;
 	player.hosting = true;
 
-	this.log("Game created with ID of " + player.game.ID + "by player " + player.ID);
+	this.log("Game created with ID of " + player.game.id + "by player " + player.ID);
 
 	return aGame;
 };
