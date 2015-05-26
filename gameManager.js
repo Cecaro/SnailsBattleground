@@ -3,6 +3,7 @@
 // gameManager.js game logic for the game
 
 var frame_time = 60/1000;
+
 if("undefined" != typeof(global))
 {
 	frame_time = 45;
@@ -41,8 +42,8 @@ if("undefined" != typeof(global))
         this.server = this.instance !== undefined;
 
         this.world = {
-            width : 1080,
-            height : 720
+            width : 720,
+            height : 480
         };
 
         if(this.server) {
@@ -527,7 +528,7 @@ game_Manager.prototype.client_process_net_prediction_correction = function() {
         //Update the debug server position block
     this.ghosts.server_pos_self.pos = this.pos(my_server_pos);
 
-            //here we handle our local input prediction ,
+            //here we handle our local input prediction,
             //by correcting it with the server and reconciling its differences
 
         var my_last_input_on_server = this.players.self.host ? latest_server_data.his : latest_server_data.cis;
