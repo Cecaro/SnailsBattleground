@@ -1,186 +1,200 @@
 // Written by Romain Cerovic 
+//Based on the code of the Realtime Multiplayer Game in HTML5 code
 
-var gameServer 	= module.explorts = { games : {}, gameCount:0},
-	UUID 		= require("node-uuid"),
-	verbose		= true;
+var
+        gameServer = module.exports = { games : {}, gameCount:0 },
+        UUID        = require("node-uuid"),
+        verbose     = true;
 
+    global.window = global.document = global;
 
-global.window = global.document = global;
+    require("./gameManager.js");
 
-require("./gameManager.js");
+    gameServer.log = function() {
+        if(verbose) console.log.apply(this,arguments);
+    };
 
-gameServer.log = function() {
-	if(verbose) console.log.apply(this, arguments);
-};
+    gameServer.presetPing = 0;
+    gameServer.lTime = 0;
+    gameServer.deltaT = new Date().getTime();
+    gameServer.deltaTe = new Date().getTime();
 
-gameServer.presetPing = 0;
-gameServer.messages = [];
+    gameServer.messages = [];
 
-gameServer.lTime = 0;
-gameServer.dT = new Date().getTime();
-gameServer.dTE = new Date().getTime();
+    setInterval(function(){
+        gameServer.deltaT = new Date().getTime() - gameServer.deltaTe;
+        gameServer.deltaTe = new Date().getTime();
+        gameServer.lTime += gameServer.deltaT/1000.0;
+    }, 4);
 
-//This function runs as long as the game runs at the interval given. 
-//It updates the local time constantly.
-setInterval(function(){
-	gameServer.dT = new Date().getTime() - gameServer.dTE;
-	gameServer.dTE = new Date().getTime();
-	gameServer.lTime += gameServer.dT/1000.0;
-}, 4);
+    gameServer.onMessage = function(client,message) {
 
-//
-exports.delayMessage = function(client, message) {
-	if(this.presetPing && message.split(".")[0].substr(0,1) == "i"){
+        if(this.presetPing && message.split(".")[0].substr(0,1) == "i") {
 
-		gameServer.messages.push({client:client, message:message});
+            gameServer.messages.push({client:client, message:message});
 
-		setTimeout(function() {
-			if(gameServer.messages.length){
-				gameServer.onMessage(gameServer.messages[0].client, gameServer.messages[0].message);
-				gameServer.messages.splice(0,1);
-			}
-		}.bind(this), this.presetPing);
-	}
-	else {
-		gameServer.onMessage(client,message);
-	}
-};
+            setTimeout(function(){
+                if(gameServer.messages.length) {
+                    gameServer.msgHandler( gameServer.messages[0].client, gameServer.messages[0].message );
+                    gameServer.messages.splice(0,1);
+                }
+            }.bind(this), this.presetPing);
 
-exports.onMessage = function(client, message){
-	var messageSplit = message.split(".");
-	var messageType = messageSplit[0];
+        } else {
+            gameServer.msgHandler(client, message);
+        }
+    };
+    
+    gameServer.msgHandler = function(client,message) {
 
-	var otherClient =
-            (client.game.playerHost.userID == client.userID) ?
+        var messageParts = message.split(".");
+        var messageType = messageParts[0];
+
+        var otherClient =
+            (client.game.playerHost.userid == client.userid) ?
                 client.game.playerClient : client.game.playerHost;
 
-    switch(messageType) {
+        //identifies the message based on the first character sent
+        switch(messageType) {
     	case "i":
-    		this.onInput(client,messageSplit);
+    		this.onInput(client,messageParts);
     		break;
     	case "p":
-    		client.send("s.p" + messageSplit[1]);
+    		client.send("s.p" + messageParts[1]);
     		break;
     	case "c":
     		if(otherClient)
-    			otherClient.send("s.c" + messageSplit[1]);
+    			otherClient.send("s.c" + messageParts[1]);
     		break;
     	case "l":
-    		this.presetPing = parseFloat(messageSplit[1]);
+    		this.presetPing = parseFloat(messageParts[1]);
     		break;
     	default:
     		this.log("No message received.");
     }
 
- };
+    };
 
-exports.onInput = function(client, msgs){
-	var commands = msgs[1].split("-");
+    gameServer.onInput = function(client, parts) {
 
-	var iTime = msgs[2].replace("-",".");
+        var iCommands = parts[1].split("-");
+        var iTime = parts[2].replace("-",".");
+        var iSeq = parts[3];
 
-	var sequence = msgs[3];
+        if(client && client.game && client.game.gameManager) {
+            client.game.gameManager.handle_server_input(client, iCommands, iTime, iSeq);
+        }
 
-	if(client && client.game && client.game.gameMg){
-		client.game.gameMg.handle_server_input(client, commands, iTime, sequence);
-	}
-};
+    };
 
-exports.createGame = function(player){
-	var aGame = {
-		id : UUID(),
-		playerHost:player,
-		playerClient:null,
-		playerCount:1
-	};
-	this.games [ aGame.id ] = aGame;
+    gameServer.createGame = function(player) {
 
-	this.gameCount++;
+        var aGame = {
+                id : UUID(),
+                playerHost:player,
+                playerClient:null,
+                playerCount:1
+            };
 
-	aGame.gameMg = new game_Manager(aGame);
+        this.games[ aGame.id ] = aGame;
 
-	aGame.gameMg.update(new Date().getTime());
+        this.gameCount++;
 
-	player.send("s.h" + String(aGame.gameMg.lTime).replace(".","-"));
-	player.game = aGame;
-	player.hosting = true;
+        aGame.gameManager = new game_Manager( aGame );
+        aGame.gameManager.update( new Date().getTime() );
 
-	this.log("Game created with ID of " + player.game.id + "by player " + player.ID);
+        player.send("s.h."+ String(aGame.gameManager.lTime).replace(".","-"));
+        console.log("server host at  " + aGame.gameManager.lTime);
+        player.game = aGame;
+        player.hosting = true;
+        
+        this.log("Game created with ID of " + player.game.id + "by player " + player.userid);
 
-	return aGame;
-};
+        return aGame;
 
-exports.endGame = function(gameID, userID){
-	var eGame = this.games[gameID];
+    }; 
 
-	if(eGame){
-		eGame.gameMg.stop_update();
+    gameServer.endGame = function(gameid, userid) {
 
-		if(eGame.playerCount > 1) {
-			if(userID == eGame.playerHost.userID){
-				if(eGame.playerClient){
-					eGame.playerClient.send("s.e");
-					this.findGame(eGame.playerClient);
-				}
-			}
-			else{
-				if(eGame.playerHost){
-					eGame.playerHost.send("s.e");
+        var aGame = this.games[gameid];
 
-					eGame.playerHost.hosting = false;
+        if(aGame) {
 
-					this.findGame(eGame.playerHost);
-				}
-			}
-		}
+            aGame.gameManager.stop_update();
 
-		delete this.games[gameID];
-		this.gameCount--;
-	}
+            if(aGame.playerCount > 1) {
 
-	else{
-		this.log("Game does not exist.");
-	}
-};
+                if(userid == aGame.playerHost.userid) {
 
-exports.startGame = function(game){
-	//Sends the player the ID of the host
-	game.playerClient.send("s.j" + game.playerHost.userID);
-	//Sets the game of the client to be the current game
-	game.playerClient.game = game;
+                    if(aGame.playerClient) {
+                        aGame.playerClient.send("s.e");
+                        this.findGame(aGame.playerClient);
+                    }
+                    
+                } else {
+                    if(aGame.playerHost) {
+                        aGame.playerHost.send("s.e");
+                        aGame.playerHost.hosting = false;
+                        this.findGame(aGame.playerHost);
+                    }
+                }
+            }
 
-	//send both the client and the host of the game that the game is ready
-	game.playerClient.send("s.r" + String(game.gameMg.lTime).replace(".","-"));
-	game.playerHost.send("s.r" + String(game.gameMg.lTime).replace(".","-"));
+            delete this.games[gameid];
+            this.gameCount--;
 
-	//boolean used to start updates 
-	gameStarted = true;
-};
+        } else {
+            this.log("404 Game not found!");
+        }
 
-exports.findGame = function(player){
-	if(this.gameCount){
-		var joinGame = false;
+    };
 
-		for(var gameId in this.games) {
-			if(!this.games.hasOwnProperty(gameId)) continue;
+    gameServer.startGame = function(game) {
 
-			var gameInst = this.games[gameId];
+        game.playerClient.send("s.j." + game.playerHost.userid);
+        game.playerClient.game = game;
 
-			if(gameInst.playerCount < 2) {
-				joinGame = true;
+        game.playerClient.send("s.r."+ String(game.gameManager.lTime).replace(".","-"));
+        game.playerHost.send("s.r."+ String(game.gameManager.lTime).replace(".","-"));
+ 
+        game.active = true;
+    };
 
-				gameInst.playerClient = player;
-				gameInst.gameMg.players.other.instance = player;
-				gameInst.playerCount++;
+    gameServer.findGame = function(player) {
 
-				this.startGame(gameInst);
-			}
-		}
-		if(!joinGame){
-			this.createGame(player);
-		}
-	}
-	else {
-		this.createGame(player);
-	}
-};
+        this.log("looking for a game. We have : " + this.gameCount);
+
+        if(this.gameCount) {
+                
+            var joined_a_game = false;
+
+            for(var gameid in this.games) {
+                if(!this.games.hasOwnProperty(gameid)) continue;
+
+                var game_instance = this.games[gameid];
+
+                if(game_instance.playerCount < 2) {
+
+                    joined_a_game = true;
+
+                    game_instance.playerClient = player;
+                    game_instance.gameManager.players.other.instance = player;
+                    game_instance.playerCount++;
+
+                    this.startGame(game_instance);
+
+                }
+            } 
+
+            if(!joined_a_game) {
+
+                this.createGame(player);
+            }
+
+        } 
+        else { 
+
+            this.createGame(player);
+        }
+
+    };

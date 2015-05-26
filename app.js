@@ -2,73 +2,79 @@
 // Based on the code of Realtime Multiplayer in HTML 5 
 // app.js sets up all that is needed to run the server and start the gameServer. 
 
-var 
-	gameport 	= process.env.PORT || 9001,
-	fileDebug 	= false,
+var
+        gameport        = process.env.PORT || 9001,
 
-	io 			= require('socket.io'),
-	express 	= require('express'),
-	UUID 		= require('node-uuid'),
-	http		= require('http'),
-	app			= express(),
-	server		= http.createServer(app);
+        io              = require('socket.io'),
+        express         = require('express'),
+        UUID            = require('node-uuid'),
+
+        verbose         = false,
+        http            = require('http'),
+        app             = express(),
+        server          = http.createServer(app);
 
 
-server.listen(gameport)
+    server.listen(gameport)
 
-console.log("Server listening to port " + gameport);
+        //Log something so we know that it succeeded.
+    console.log('\t :: Express :: Listening on port ' + gameport );
 
-//give the express server the location of the html file by default
-app.get('/', function(req, res){
-	console.log("Attempt to load %s", __dirname + "/index.html");
-	res.sendfile("/index.html", {root:__dirname});
-});
+    app.get( '/', function( req, res ){
+        console.log('trying to load %s', __dirname + '/index.html');
+        res.sendfile( '/index.html' , { root:__dirname });
+    });
 
-//give it the location of any other file from the root of the directory if they are needed
-app.get("/*", function(req, res, next){
-	var fileToLoad = req.params[0];
+    app.get( '/*' , function( req, res, next ) {
 
-	if(fileDebug) console.log("File request " + fileToLoad);
+        var file = req.params[0];
 
-	res.sendfile(__dirname + "/" + fileToLoad);
-})
+        if(verbose) console.log('\t :: Express :: file requested : ' + file);
 
-//create an instance of socket.io
-var socket = io.listen(server);
+        res.sendfile( __dirname + '/' + file );
 
-//Socket configuration
-/*socket.configure(function(){
-	socket.set("log level",0);
+    }); 
 
-	socket.set("authorisation", function(handshakeData, callback){
-		callback(null, true);
-	});
-});*/
+    var sio = io.listen(server);
 
-// call the gameSever file to run
-// the game server handles connection, game logins, game creation, joining games
-// and deleting and ending games 
-game_server = require("./gameServer.js");
+    /*sio.configure(function (){
 
-socket.sockets.on("connection", function(client) {
-	client.userid = UUID();
+        sio.set('log level', 0);
 
-	client.emit("onconnected", {id: client.userid} );
+        sio.set('authorization', function (handshakeData, callback) {
+          callback(null, true); // error first callback style
+        });
 
-	game_server.findGame(client);
+    });*/
 
-	console.log("New player " + client.userid + "has joined.");
+    game_server = require('./gameServer.js');
 
-	client.on("message", function(m) {
-		game_server.delayMessage(client, m);
-	});
+    sio.sockets.on('connection', function (client) {
+        
+        client.userid = UUID();
 
-	client.on("disconnect", function(){
-		console.log("Player " + client.userid + "has disconnected.");
+        client.emit('onconnected', { id: client.userid } );
 
-		//end the game if the client is disconnected 
-		if(client.game && client.game.id) {
-			game_server.endGame(client.game.id, client.userid);
-		}
-	});
-});
+        game_server.findGame(client);
+
+        console.log('\t socket.io:: player ' + client.userid + ' connected');
+        
+        client.on('message', function(m) {
+
+            game_server.onMessage(client, m);
+
+        });
+
+        client.on('disconnect', function () {
+
+            console.log('\t socket.io:: client disconnected ' + client.userid + ' ' + client.game_id);
+            
+            if(client.game && client.game.id) {
+
+                game_server.endGame(client.game.id, client.userid);
+
+            } 
+
+        }); 
+     
+    }); 
